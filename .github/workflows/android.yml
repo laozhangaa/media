@@ -1,0 +1,38 @@
+name: Android CI
+# 触发条件：release分支推送/PR时执行
+on:
+  push:
+    branches: [ "release" ]
+  pull_request:
+    branches: [ "release" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 拉取仓库代码
+      - uses: actions/checkout@v4
+
+      # 2. 配置JDK 11（模板自带JDK11，和你现有配置保持一致）
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: gradle # 缓存Gradle依赖，加速构建
+
+      # 3. 赋予gradlew脚本执行权限
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4. 编译libraries下的Library模块，生成Release AAR
+      # 把library-name替换成你libraries文件夹里的模块名，比如media-sdk
+      - name: Build AAR
+        run: ./gradlew :libraries:library-name:assembleRelease
+
+      # 5. 上传生成的AAR到Action产物面板，运行完可下载
+      - name: Upload AAR Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Media-Library-AAR
+          path: libraries/library-name/build/outputs/aar/*.aar
