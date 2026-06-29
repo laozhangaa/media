@@ -1,0 +1,41 @@
+name: Android CI 打包AAR
+# 触发条件：main分支推送、手动触发、打tag时执行
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+  tags:
+    - 'v*'
+
+jobs:
+  build-aar:
+    runs-on: ubuntu-latest
+    steps:
+    # 1. 拉取仓库源码
+    - uses: actions/checkout@v4
+    # 2. 配置JDK 17（Android Gradle新版要求）
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+    # 3. 授权Gradle执行权限
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    # 4. 编译Release版本，自动生成AAR
+    - name: Build library AAR
+      run: ./gradlew :你的library模块名:assembleRelease
+      # 示例：如果库模块叫sdk，命令就是 ./gradlew :sdk:assembleRelease
+    # 5. 上传生成的AAR到Action产物（可在页面下载）
+    - name: Upload AAR Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: library-aar-file
+        path: 你的library模块/build/outputs/aar/*.aar
+    # 可选：打tag时自动创建Release并附带AAR包
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: 你的library模块/build/outputs/aar/*.aar
